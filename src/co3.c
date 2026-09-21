@@ -71,7 +71,7 @@ int co3_schedule_alarm(unsigned int seconds)
      */
     alarm(seconds);
 
-    printf("[CO3] SIGALRM timer scheduled for %u seconds\n",
+    printf("SIGALRM timer scheduled for %u seconds\n",
            seconds);
 
     return 0;
@@ -84,7 +84,7 @@ int co3_schedule_alarm(unsigned int seconds)
  */
 void co3_wait_for_alarm(void)
 {
-    printf("[CO3] Waiting for asynchronous SIGALRM...\n");
+    printf("Waiting for asynchronous SIGALRM...\n");
 
     while (!alarm_triggered)
     {
@@ -95,7 +95,7 @@ void co3_wait_for_alarm(void)
         }
     }
 
-    printf("[CO3] SIGALRM received\n");
+    printf("SIGALRM received\n");
 }
 
 /*
@@ -107,8 +107,7 @@ void co3_cancel_alarm(void)
 {
     alarm(0);
     alarm_triggered = 0;
-
-    printf("[CO3] SIGALRM timer cancelled\n");
+    printf("SIGALRM timer cancelled\n");
 }
 
 /*

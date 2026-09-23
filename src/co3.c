@@ -3,6 +3,7 @@
 #include "os_project.h"
 
 #include <errno.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,7 +19,7 @@
  * sigaction() -> install signal handler
  * alarm()     -> schedule alarm
  * SIGALRM     -> asynchronous alarm notification
- * pause()     -> wait for SIGALRM
+ * sigwait()   -> wait for SIGALRM in the alarm worker
  */
 
 static volatile sig_atomic_t alarm_triggered = 0;
@@ -43,6 +44,8 @@ static void alarm_handler(int signo)
 int co3_schedule_alarm(unsigned int seconds)
 {
     struct sigaction sa;
+    sigset_t alarm_set;
+    int result;
 
     if (seconds == 0)
     {
@@ -61,6 +64,20 @@ int co3_schedule_alarm(unsigned int seconds)
     if (sigaction(SIGALRM, &sa, NULL) == -1)
     {
         perror("sigaction");
+        return -1;
+    }
+
+    sigemptyset(&alarm_set);
+    sigaddset(&alarm_set, SIGALRM);
+
+    /* Keep SIGALRM in the worker's wait set instead of waking the menu. */
+    result = pthread_sigmask(SIG_BLOCK, &alarm_set, NULL);
+
+    if (result != 0)
+    {
+        fprintf(stderr,
+                "pthread_sigmask: %s\n",
+                strerror(result));
         return -1;
     }
 
@@ -84,18 +101,28 @@ int co3_schedule_alarm(unsigned int seconds)
  */
 void co3_wait_for_alarm(void)
 {
+    sigset_t alarm_set;
+    int signal_number;
+    int result;
+
     printf("Waiting for asynchronous SIGALRM...\n");
 
-    while (!alarm_triggered)
+    sigemptyset(&alarm_set);
+    sigaddset(&alarm_set, SIGALRM);
+
+    result = sigwait(&alarm_set, &signal_number);
+
+    if (result != 0)
     {
-        if (pause() == -1 && errno != EINTR)
-        {
-            perror("pause");
-            return;
-        }
+        fprintf(stderr,
+                "sigwait: %s\n",
+                strerror(result));
+        return;
     }
 
-    printf("SIGALRM received\n");
+    alarm_triggered = 1;
+
+    printf("SIGALRM received.\n");
 }
 
 /*

@@ -34,7 +34,7 @@ Alarm *co4_create_alarm(void)
         return NULL;
     }
 
-    printf("[CO4] Alarm memory allocated dynamically\n");
+    printf("Alarm memory allocated dynamically\n");
 
     return alarm_data;
 }
@@ -53,7 +53,7 @@ void co4_destroy_alarm(Alarm *alarm_data)
 
     free(alarm_data);
 
-    printf("[CO4] Alarm memory released using free()\n");
+    printf("Alarm memory released using free()\n");
 }
 
 /*
@@ -87,14 +87,14 @@ void co4_demo(void)
              sizeof(alarm_data->label),
              "DemoAlarm");
 
-    printf("[CO4] malloc() allocated alarm memory\n");
+    printf("malloc() allocated alarm memory\n");
 
-    printf("[CO4] Alarm Time: %02d:%02d:%02d\n",
+    printf("Alarm Time: %02d:%02d:%02d\n",
            alarm_data->hour,
            alarm_data->minute,
            alarm_data->second);
 
-    printf("[CO4] Alarm Status: %s\n",
+    printf("Alarm Status: %s\n",
            alarm_data->enabled
                ? "Active"
                : "Inactive");
@@ -103,6 +103,6 @@ void co4_demo(void)
 
     alarm_data = NULL;
 
-    printf("[CO4] free() released alarm memory\n");
+    printf("free() released alarm memory\n");
     printf("CO4 demonstration completed successfully.\n");
 }

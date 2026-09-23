@@ -128,11 +128,6 @@ int main(void)
                 if (alarm_set(hour, minute, second, label) == 0)
                 {
                     printf("\nAlarm saved successfully.\n");
-
-                    /*
-                     * Wait until the alarm time and ring.
-                     */
-                    alarm_wait_and_ring();
                 }
 
                 break;

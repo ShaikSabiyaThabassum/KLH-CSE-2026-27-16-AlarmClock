@@ -76,7 +76,7 @@ int co5_save_alarm(const Alarm *alarm)
         return -1;
     }
 
-    printf("[CO5] Alarm saved to %s using open/write/close\n",
+    printf("Alarm saved to %s using open/write/close\n",
            ALARM_FILE);
 
     return 0;
@@ -139,7 +139,7 @@ int co5_load_alarm(Alarm *alarm)
         return -1;
     }
 
-    printf("[CO5] Alarm loaded from %s using open/read/close\n",
+    printf("Alarm loaded from %s using open/read/close\n",
            ALARM_FILE);
 
     return 0;
@@ -154,7 +154,7 @@ void co5_delete_alarm(void)
 {
     if (unlink(ALARM_FILE) == 0)
     {
-        printf("[CO5] Alarm file removed\n");
+        printf("Alarm file removed\n");
     }
 }
 

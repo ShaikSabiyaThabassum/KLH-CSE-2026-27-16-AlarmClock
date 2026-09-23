@@ -45,7 +45,7 @@ static void *monitor_alarm(void *arg)
 
     pthread_mutex_lock(&alarm_mutex);
 
-    printf("[CO6] Monitor thread started\n");
+    printf("Monitor thread started\n");
 
     while (!alarm_event && !cancel_event)
     {
@@ -57,14 +57,14 @@ static void *monitor_alarm(void *arg)
 
     if (cancel_event)
     {
-        printf("[CO6] Monitor thread received cancellation event\n");
+        printf("Monitor thread received cancellation event\n");
     }
 
     if (alarm_event && shared_alarm != NULL)
     {
-        printf("[CO6] Mutex-protected alarm state accessed\n");
+        printf("Mutex-protected alarm state accessed\n");
 
-        printf("[CO6] Alarm: %02d:%02d:%02d (%s)\n",
+        printf("Alarm: %02d:%02d:%02d (%s)\n",
                shared_alarm->hour,
                shared_alarm->minute,
                shared_alarm->second,
@@ -73,7 +73,7 @@ static void *monitor_alarm(void *arg)
 
     pthread_mutex_unlock(&alarm_mutex);
 
-    printf("[CO6] Monitor thread finished\n");
+    printf("Monitor thread finished\n");
 
     return NULL;
 }
@@ -132,7 +132,7 @@ int co6_start_monitor(Alarm *alarm)
 
     pthread_mutex_unlock(&alarm_mutex);
 
-    printf("[CO6] POSIX monitor thread created\n");
+    printf("POSIX monitor thread created\n");
 
     return 0;
 }
@@ -152,7 +152,7 @@ void co6_notify_alarm(void)
 
     pthread_mutex_unlock(&alarm_mutex);
 
-    printf("[CO6] Alarm event signalled to monitor thread\n");
+    printf("Alarm event signalled to monitor thread\n");
 }
 
 /*
@@ -178,7 +178,7 @@ void co6_join_monitor(void)
     monitor_started = 0;
     shared_alarm = NULL;
 
-    printf("[CO6] pthread_join() completed\n");
+    printf("pthread_join() completed\n");
 }
 
 /*
@@ -212,7 +212,7 @@ void co6_cancel_monitor(void)
     monitor_started = 0;
     shared_alarm = NULL;
 
-    printf("[CO6] Monitor thread cancelled safely\n");
+    printf("Monitor thread cancelled safely\n");
 }
 
 /*
@@ -260,7 +260,7 @@ void co6_demo(void)
         return;
     }
 
-    printf("[CO6] Main thread continues\n");
+    printf("Main thread continues\n");
 
     co6_notify_alarm();
 

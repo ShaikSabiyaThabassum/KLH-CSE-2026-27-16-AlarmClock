@@ -10,7 +10,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-static Alarm review_alarm_storage;
 static Alarm *current_alarm = NULL;
 
 static pthread_t alarm_wait_thread;
@@ -26,14 +25,21 @@ int alarm_init(void)
 {
     printf("\nInitializing Alarm Clock...\n");
 
-    /* Review-1 mode: CO4-CO6 integration is disabled.
-     * Only CO1-CO3 remain active for this review.
-     */
-    memset(&review_alarm_storage, 0, sizeof(review_alarm_storage));
-    current_alarm = &review_alarm_storage;
+    current_alarm = co4_create_alarm();
+
+    if (current_alarm == NULL)
+    {
+        fprintf(stderr, "Could not allocate alarm memory.\n");
+        return -1;
+    }
+
     current_alarm->enabled = 0;
 
-    printf("[Review-1] CO4-CO6 integration disabled. CO1-CO3 active.\n");
+    if (co5_load_alarm(current_alarm) == 0)
+    {
+        printf("Stored alarm restored from disk.\n");
+    }
+
     printf("Alarm Clock initialized successfully.\n");
 
     return 0;
@@ -48,12 +54,9 @@ int alarm_set(int hour,
     time_t target;
     long difference;
     struct tm target_tm;
+    Alarm *new_alarm;
 
     alarm_cancel_wait_thread();
-
-    /* Review-1 mode: CO4-CO6 integration is disabled.
-     * Only CO1-CO3 remain active.
-     */
     co3_cancel_alarm();
 
     /* CO1 */
@@ -67,10 +70,21 @@ int alarm_set(int hour,
         return -1;
     }
 
-    /* Review-1 mode: CO4-CO6 integration disabled.
-     * Use local alarm memory instead of CO4/CO5/CO6 processes.
-     */
-    current_alarm = &review_alarm_storage;
+    if (current_alarm != NULL && current_alarm->enabled)
+    {
+        co4_destroy_alarm(current_alarm);
+        current_alarm = NULL;
+    }
+
+    new_alarm = co4_create_alarm();
+
+    if (new_alarm == NULL)
+    {
+        printf("Could not allocate alarm memory.\n");
+        return -1;
+    }
+
+    current_alarm = new_alarm;
     memset(current_alarm, 0, sizeof(*current_alarm));
 
     current_alarm->hour = hour;
@@ -109,12 +123,25 @@ int alarm_set(int hour,
     if (co3_schedule_alarm((unsigned int)difference) != 0)
     {
         printf("Could not schedule SIGALRM.\n");
+        co4_destroy_alarm(current_alarm);
+        current_alarm = NULL;
         return -1;
     }
 
-    /* Review-1 mode: CO6 monitor intentionally disabled.
-     * This keeps the project focused on CO1-CO3 only.
-     */
+    if (co6_start_monitor(current_alarm) != 0)
+    {
+        printf("Could not start monitor thread.\n");
+        co3_cancel_alarm();
+        co4_destroy_alarm(current_alarm);
+        current_alarm = NULL;
+        return -1;
+    }
+
+    if (co5_save_alarm(current_alarm) != 0)
+    {
+        printf("Could not save alarm to disk.\n");
+    }
+
     pthread_mutex_lock(&wait_mutex);
     alarm_wait_cancelled = 0;
 
@@ -128,6 +155,9 @@ int alarm_set(int hour,
         perror("pthread_create");
         co3_cancel_alarm();
         co6_cancel_monitor();
+        co5_delete_alarm();
+        co4_destroy_alarm(current_alarm);
+        current_alarm = NULL;
         return -1;
     }
 
@@ -183,9 +213,16 @@ void alarm_delete(void)
 
     /* CO3 */
     co3_cancel_alarm();
+    co6_cancel_monitor();
+    co5_delete_alarm();
 
-    /* Review-1 mode: CO5/CO6 disabled. */
     current_alarm->enabled = 0;
+
+    if (current_alarm != NULL)
+    {
+        co4_destroy_alarm(current_alarm);
+        current_alarm = NULL;
+    }
 
     printf("\nTime cancelled successfully.\n");
 }
@@ -277,7 +314,7 @@ static void alarm_trigger(void)
            current_alarm->minute,
            current_alarm->second);
 
-    /* Review-1 mode: CO6 integration disabled. */
+    co6_notify_alarm();
 
     /* CO2 */
     child_pid = co2_start_alarm_process();
@@ -288,7 +325,15 @@ static void alarm_trigger(void)
         co2_stop_alarm_process(child_pid);
     }
 
+    co6_join_monitor();
+
     current_alarm->enabled = 0;
+    co5_delete_alarm();
+    if (current_alarm != NULL)
+    {
+        co4_destroy_alarm(current_alarm);
+        current_alarm = NULL;
+    }
 
     printf("============================================\n");
     printf("              TIME COMPLETED\n");
@@ -315,8 +360,16 @@ void alarm_stop(void)
 {
     alarm_cancel_wait_thread();
     co3_cancel_alarm();
+    co6_cancel_monitor();
 
-    /* Review-1 mode: CO6 integration disabled. */
+    if (current_alarm != NULL)
+    {
+        current_alarm->enabled = 0;
+        co5_delete_alarm();
+        co4_destroy_alarm(current_alarm);
+        current_alarm = NULL;
+    }
+
     printf("\nTime stopped.\n");
 }
 
@@ -346,11 +399,13 @@ void alarm_shutdown(void)
     alarm_cancel_wait_thread();
 
     co3_cancel_alarm();
+    co6_cancel_monitor();
+    co5_delete_alarm();
 
-    /* Review-1 mode: CO4-CO6 integration disabled. */
     if (current_alarm != NULL)
     {
         current_alarm->enabled = 0;
+        co4_destroy_alarm(current_alarm);
         current_alarm = NULL;
     }
 

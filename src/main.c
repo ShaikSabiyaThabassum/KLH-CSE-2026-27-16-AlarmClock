@@ -58,7 +58,8 @@ int main(void)
     {
         show_menu();
 
-        printf("Enter choice: ");
+        printf("Enter the choice: ");
+        fflush(stdout);
 
         /*
          * Read menu choice.

@@ -338,6 +338,8 @@ static void alarm_trigger(void)
     printf("============================================\n");
     printf("              TIME COMPLETED\n");
     printf("============================================\n");
+    printf("Enter the choice: ");
+    fflush(stdout);
 }
 
 void alarm_wait_and_ring(void)
